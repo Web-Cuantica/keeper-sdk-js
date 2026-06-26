@@ -1,11 +1,14 @@
 // Keeper SDK (Node/TypeScript): observabilidad en una línea sobre OpenTelemetry.
 // Envoltorio delgado del SDK oficial de OTel (ADR-0011): auto-instrumenta HTTP,
-// Express, NestJS y pg, y exporta por OTLP/HTTP a la plataforma Keeper.
+// Express, NestJS, pg y loggers (pino/winston/bunyan), y exporta los 3 pilares
+// —trazas, métricas y logs— por OTLP/HTTP a la plataforma Keeper.
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
+import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
 import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
+import { BatchLogRecordProcessor } from '@opentelemetry/sdk-logs';
 import { Resource } from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 
@@ -45,6 +48,11 @@ export function startKeeper(options: KeeperOptions = {}): void {
     metricReader: new PeriodicExportingMetricReader({
       exporter: new OTLPMetricExporter({ url: `${endpoint}/v1/metrics` }),
     }),
+    // Logs: las instrumentaciones de pino/winston/bunyan emiten log records
+    // que este procesador exporta por OTLP (tercer pilar).
+    logRecordProcessor: new BatchLogRecordProcessor(
+      new OTLPLogExporter({ url: `${endpoint}/v1/logs` }),
+    ),
     instrumentations: [getNodeAutoInstrumentations()],
   });
 
