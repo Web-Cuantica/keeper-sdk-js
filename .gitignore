@@ -78,9 +78,11 @@ web_modules/
 .next
 out
 
+# dist va versionado: el SDK se instala por referencia de git y pnpm no corre scripts de build
+# de dependencias sin una lista blanca por commit. Regenerar con npm run build antes de etiquetar.
+
 # Nuxt.js build / generate output
 .nuxt
-dist
 .output
 
 # Gatsby files

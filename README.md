@@ -154,6 +154,10 @@ sin exponer PII. Los secretos siguen censurándose.
 
 ## Build y tests
 
+`dist/` va versionado: el SDK se instala por referencia de git
+(`github:Web-Cuantica/keeper-sdk-js#v0.3.1`) y pnpm no corre scripts de build de dependencias sin
+una lista blanca por commit. Antes de etiquetar una versión: `npm run build` y commitear `dist/`.
+
 ```bash
 npm install
 npm run build   # genera dist/

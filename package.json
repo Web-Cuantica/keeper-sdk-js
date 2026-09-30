@@ -1,6 +1,6 @@
 {
   "name": "@web-cuantica/keeper-sdk",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "SDK de Keeper para Node, NestJS y Next.js: observabilidad en una línea sobre OpenTelemetry.",
   "license": "MIT",
   "main": "dist/index.js",
@@ -29,7 +29,6 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "jest --coverage",
-    "prepare": "npm run build",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
