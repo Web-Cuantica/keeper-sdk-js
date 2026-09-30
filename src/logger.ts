@@ -6,8 +6,10 @@
 // stdout. El estándar: `message` para humanos, datos de negocio como atributos
 // planos snake_case, errores en `exception.*`.
 import { logs, SeverityNumber } from '@opentelemetry/api-logs';
-import { getRequestId } from './context';
+import { clientAttributes } from './client';
+import { getClient, getRequestId } from './context';
 import { redactAttributes } from './redact';
+import { safeUTF8 } from './sanitize';
 
 export type KeeperLogLevel = 'verbose' | 'debug' | 'log' | 'warn' | 'error' | 'fatal';
 
@@ -92,8 +94,19 @@ export class KeeperLogger {
     if (requestId) {
       otelAttributes['request_id'] = requestId;
     }
+    const client = getClient();
+    if (client) {
+      Object.assign(otelAttributes, clientAttributes(client));
+    }
     if (stack) {
       otelAttributes['exception.stacktrace'] = stack;
+    }
+
+    // Sanea strings de origen no confiable antes de exportar (§ paridad SafeUTF8).
+    for (const [key, value] of Object.entries(otelAttributes)) {
+      if (typeof value === 'string') {
+        otelAttributes[key] = safeUTF8(value);
+      }
     }
 
     const severity = SEVERITY[level];
@@ -101,7 +114,7 @@ export class KeeperLogger {
     logs.getLogger('@web-cuantica/keeper-sdk').emit({
       severityNumber: severity.num,
       severityText: severity.text,
-      body,
+      body: typeof body === 'string' ? safeUTF8(body) : body,
       attributes: otelAttributes as never,
     });
 
@@ -154,13 +167,21 @@ export class KeeperLogger {
         stack = param.stack;
       } else if (typeof param === 'object' && param !== null) {
         for (const [key, value] of Object.entries(param)) {
-          attributes[key] = this.coerce(value);
+          // Se guarda el valor crudo; la redacción (recursiva) corre ANTES de
+          // aplanarlo, para no serializar secretos anidados (§3.4).
+          attributes[key] = value;
         }
       }
     }
 
-    attributes = redactAttributes(attributes, this.redactKeys);
-    return { body, context, stack, attributes };
+    // Orden crítico: redactar (recursivo sobre objetos/arreglos) y DESPUÉS aplanar
+    // a valores compatibles con OTel. Invertir el orden filtra secretos anidados.
+    const redacted = redactAttributes(attributes, this.redactKeys);
+    const coerced: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(redacted)) {
+      coerced[key] = this.coerce(value);
+    }
+    return { body, context, stack, attributes: coerced };
   }
 
   private coerce(value: unknown): unknown {

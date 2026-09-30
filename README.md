@@ -87,10 +87,15 @@ Por opciones de `startKeeper(...)` o por variables de entorno:
 | `OTEL_SERVICE_NAME` | Nombre del servicio | `servicio-sin-nombre` |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | Base OTLP/HTTP de Keeper | `http://localhost:4318` |
 | `KEEPER_LOG_LEVEL` | Nivel mínimo del logger (`verbose`/`debug`/`info`/`warn`/`error`/`fatal`) | `info` |
+| `KEEPER_HASH_PEPPER` | Pepper HMAC para hashes one-way de IDs (`email`/`curp`/…) | vacío (PII → `[REDACTADO]`) |
 
-Opciones adicionales de `startKeeper`: `serviceVersion`, `endpoint`,
-`ignoreIncomingPaths` (rutas que no generan telemetría; por defecto
+Opciones adicionales de `startKeeper`: `serviceVersion`, `endpoint`, `hashPepper`,
+`hashKeys`, `ignoreIncomingPaths` (rutas que no generan telemetría; por defecto
 `/health`, `/healthz`, `/live`, `/ready`, `/ping`, `/metrics`).
+
+Con el mismo `KEEPER_HASH_PEPPER` que `keeper-sdk-go` / `@dy/logging`, los
+identificadores sensibles se emiten como `h1:<hex>` (HMAC-SHA256) para correlacionar
+sin exponer PII. Los secretos siguen censurándose.
 
 ## Build y tests
 

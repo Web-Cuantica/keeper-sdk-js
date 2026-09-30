@@ -7,4 +7,17 @@ module.exports = {
   transform: {
     '^.+\\.ts$': ['ts-jest', { tsconfig: 'tsconfig.spec.json' }],
   },
+  collectCoverageFrom: ['src/**/*.ts'],
+  coverageDirectory: 'coverage',
+  coverageReporters: ['text', 'text-summary', 'lcov'],
+  coverageThreshold: {
+    global: {
+      // statements/lines altos; functions más bajos porque startKeeper() (arranque
+      // real del NodeSDK + exporters OTLP) no es unit-testeable sin smoke.
+      statements: 80,
+      branches: 70,
+      functions: 50,
+      lines: 80,
+    },
+  },
 };

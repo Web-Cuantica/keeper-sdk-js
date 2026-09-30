@@ -1,4 +1,4 @@
-import { keeperRequestContext, getRequestId } from '../src/context';
+import { keeperRequestContext, getRequestId, getClient } from '../src/context';
 
 describe('keeperRequestContext', () => {
   it('reutiliza el x-request-id entrante y lo expone dentro del request', (done) => {
@@ -24,7 +24,31 @@ describe('keeperRequestContext', () => {
     });
   });
 
-  it('fuera de un request no hay request_id', () => {
+  it('captura client.* desde IP y User-Agent', (done) => {
+    const middleware = keeperRequestContext();
+    const ua =
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+    middleware(
+      {
+        headers: {
+          'user-agent': ua,
+          'x-forwarded-for': '203.0.113.9, 10.0.0.1',
+        },
+      },
+      { setHeader: () => undefined },
+      () => {
+        const c = getClient();
+        expect(c?.address).toBe('203.0.113.9');
+        expect(c?.browser).toBe('Chrome');
+        expect(c?.os).toBe('Windows');
+        expect(c?.deviceType).toBe('desktop');
+        done();
+      },
+    );
+  });
+
+  it('fuera de un request no hay request_id ni client', () => {
     expect(getRequestId()).toBeUndefined();
+    expect(getClient()).toBeUndefined();
   });
 });
